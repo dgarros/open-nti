@@ -250,6 +250,8 @@ def print_datapoints(datapoints):
     Print all datapoints to STDOUT in influxdb format for Telegraf to pick them up
     """
 
+    #print "\n"
+
     ## Format Tags
     for datapoint in datapoints:
         tags = ''
@@ -278,7 +280,6 @@ def print_datapoints(datapoints):
         print "{0},{1} {2}".format(datapoint['measurement'], tags, fields)
 
     logger.info('Printing Datapoint to STDOUT:')
-#    logger.info(pformat(datapoints))
 
 def get_metadata_and_add_datapoint(datapoints,**kwargs):
 
@@ -392,7 +393,7 @@ def parse_result(host,target_command,result,datapoints,kpi_tags):
                                     del keys_tmp['sub-matches']
                                 for key_tmp in keys_tmp.keys():
                                     keys[key_tmp]=node.xpath(keys_tmp[key_tmp])[0].text.replace(" ","_").strip()
-                                #print keys
+
                                 for sub_match in match["loop"]["sub-matches"]:
                                     try:
                                         logger.debug('[%s]: Looking for a sub-match: %s', host, sub_match["xpath"])
@@ -565,6 +566,8 @@ def collector(**kwargs):
                 datapoints = []
                 # By default execute show version in order to get version and platform as default tags for all kpi related to this host
                 kpi_tags = {}
+
+                # Collect Facts about the device
                 target_command = 'show version | display xml'
                 version_xpath = "//package-information/comment"
                 product_model_xpath = "//product-model"
@@ -595,16 +598,18 @@ def collector(**kwargs):
                         logger.info('[%s]: Host will be referenced as : %s', host, host)
 
                     kpi_tags['device']=host
-                    kpi_tags['kpi']="base-info"
-                    match={}
-                    match["variable-name"]="base-info"
-                    # We'll add a dummy kpi in oder to have at least one fixed kpi with version/platform data.
-                    get_metadata_and_add_datapoint(datapoints=datapoints,
-                                                   match=match,
-                                                   value_tmp=value_tmp,
-                                                   host=host,
-                                                   kpi_tags=kpi_tags
-                                                )
+
+                    ## TODO Ask Efrain and Pablo about this part
+
+                    # match={}
+                    # match["variable-name"]="base-info"
+                    # # We'll add a dummy kpi in oder to have at least one fixed kpi with version/platform data.
+                    # get_metadata_and_add_datapoint(datapoints=datapoints,
+                    #                                match=match,
+                    #                                value_tmp=value_tmp,
+                    #                                host=host,
+                    #                                kpi_tags=kpi_tags
+                    #                             )
 
                 # Now we have all hosts tags that all host kpis will inherit
                 # For each target_command execute it, parse it, and insert values into DB
@@ -617,7 +622,8 @@ def collector(**kwargs):
                         logger.debug('[%s]: Parsing command: %s', host, target_command)
                         parse_result(host,target_command,result,datapoints,kpi_tags)
                         time.sleep(delay_between_commands)
-
+                    else:
+                        logger.error('[%s]: Nothing has been returned by: %s', host, target_command)
                 try:
                     jdev.close()
                     time.sleep(0.5)
@@ -859,18 +865,23 @@ if __name__ == "__main__":
 
     target_hosts_lists = [target_hosts[x:x+len(target_hosts)/max_collector_threads+1] for x in range(0, len(target_hosts), len(target_hosts)/max_collector_threads+1)]
 
-    jobs = []
-    i=1
-    for target_hosts_list in target_hosts_lists:
-        logger.info('Collector Thread-%s scheduled with following hosts: %s', i, target_hosts_list)
-        thread = threading.Thread(target=collector, kwargs={"host_list":target_hosts_list})
-        jobs.append(thread)
-        i=i+1
+    no_thread = True
 
-    # Start the threads
-    for j in jobs:
-        j.start()
+    if no_thread:
+        collector( host_list=target_hosts )
+    else:
+        jobs = []
+        i=1
+        for target_hosts_list in target_hosts_lists:
+            logger.info('Collector Thread-%s scheduled with following hosts: %s', i, target_hosts_list)
+            thread = threading.Thread(target=collector, kwargs={"host_list":target_hosts_list})
+            jobs.append(thread)
+            i=i+1
 
-    # Ensure all of the threads have finished
-    for j in jobs:
-        j.join()
+        # Start the threads
+        for j in jobs:
+            j.start()
+
+        # Ensure all of the threads have finished
+        for j in jobs:
+            j.join()
