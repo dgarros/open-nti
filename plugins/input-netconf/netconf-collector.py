@@ -568,48 +568,38 @@ def collector(**kwargs):
                 kpi_tags = {}
 
                 # Collect Facts about the device
-                target_command = 'show version | display xml'
-                version_xpath = "//package-information/comment"
-                product_model_xpath = "//product-model"
-                logger.info('[%s]: Executing command: %s', host, target_command)
-                result = execute_command(jdev,target_command)
-                if result:
-                    logger.debug('[%s]: Parsing command: %s', host, target_command)
-                    xml_data = etree.fromstring(result)
-                    value_tmp = xml_data.xpath(version_xpath)[0].text.strip()
-                    version = re.search('\[(.*?)\]$', value_tmp)
-                    if version:
-                        kpi_tags['version'] = version.group(1)
-                    else:
-                        kpi_tags['version'] = 'unknown'
-                    value_tmp = xml_data.xpath(product_model_xpath)[0].text.strip()
-                    kpi_tags['product-model'] = convert_variable_type(value_tmp)
 
-                    ## Based on parameter defined in config file
+                logger.info('[%s]: Collection Facts on device', host)
+                jdev.facts_refresh()
 
-                    if use_hostname:
-                        hostname_xpth = "//host-name"
-                        hostname_tmp = xml_data.xpath(hostname_xpth)[0].text.strip()
-                        hostname = convert_variable_type(hostname_tmp)
-                        logger.info('[%s]: Host will now be referenced as : %s', host, hostname)
-                        host = hostname
+                if jdev.facts['version']:
+                    kpi_tags['version'] = jdev.facts['version']
+                else:
+                    kpi_tags['version'] = 'unknown'
 
-                    else:
-                        logger.info('[%s]: Host will be referenced as : %s', host, host)
+                kpi_tags['product-model'] = jdev.facts['model']
 
-                    kpi_tags['device']=host
+                ## Based on parameter defined in config file
+                if use_hostname:
+                    hostname = jdev.facts['hostname']
+                    logger.info('[%s]: Host will now be referenced as : %s', host, hostname)
+                    host = hostname
+                else:
+                    logger.info('[%s]: Host will be referenced as : %s', host, host)
 
-                    ## TODO Ask Efrain and Pablo about this part
+                kpi_tags['device']=host
 
-                    # match={}
-                    # match["variable-name"]="base-info"
-                    # # We'll add a dummy kpi in oder to have at least one fixed kpi with version/platform data.
-                    # get_metadata_and_add_datapoint(datapoints=datapoints,
-                    #                                match=match,
-                    #                                value_tmp=value_tmp,
-                    #                                host=host,
-                    #                                kpi_tags=kpi_tags
-                    #                             )
+                ## TODO Ask Efrain and Pablo about this part
+
+                # match={}
+                # match["variable-name"]="base-info"
+                # # We'll add a dummy kpi in oder to have at least one fixed kpi with version/platform data.
+                # get_metadata_and_add_datapoint(datapoints=datapoints,
+                #                                match=match,
+                #                                value_tmp=value_tmp,
+                #                                host=host,
+                #                                kpi_tags=kpi_tags
+                #                             )
 
                 # Now we have all hosts tags that all host kpis will inherit
                 # For each target_command execute it, parse it, and insert values into DB
