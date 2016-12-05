@@ -688,8 +688,6 @@ def collector(**kwargs):
                 if datapoints:   # Only insert datapoints if there is any :)
                     print_datapoints(datapoints)
 
-
-
 ################################################################################################
 ################################################################################################
 ################################################################################################
@@ -722,9 +720,9 @@ dynamic_args = vars(full_parser.parse_args())
 if dynamic_args['test']:
     BASE_DIR_INPUT = dynamic_args['input']
 
-################################################################################################
+################################################################################
 # Loading YAML Default Variables
-###############################################################################################
+################################################################################
 
 default_variables_yaml_file = BASE_DIR_INPUT + "open-nti.variables.yaml"
 default_variables = {}
@@ -738,13 +736,6 @@ except Exception, e:
     sys.exit(0)
 
 db_schema = default_variables['db_schema']
-# db_server = default_variables['db_server']
-# db_port = default_variables['db_port']
-# db_name = default_variables['db_name']
-# db_admin = default_variables['db_admin']
-# db_admin_password = default_variables['db_admin_password']
-# db_user = default_variables['db_user']
-# db_user_password = default_variables['db_user_password']
 max_connection_retries = default_variables['max_connection_retries']
 max_collector_threads = default_variables['max_collector_threads']
 delay_between_commands = default_variables['delay_between_commands']
@@ -766,9 +757,11 @@ if not(dynamic_args['start']):
     logger.error('Missing <start> option, so nothing to do')
     sys.exit(0)
 
-################################################################################################
-# open-nti starts here start
-################################################################################################
+################################################################################
+################################################################################
+# Netconf Collector starts here start
+################################################################################
+################################################################################
 
 # Setting up logging directories and files
 timestamp = time.strftime("%Y-%m-%d", time.localtime(time.time()))
@@ -777,7 +770,10 @@ logger = logging.getLogger("_open-nti_")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir, 0755)
 formatter = '%(asctime)s %(name)s %(levelname)s %(threadName)-10s:  %(message)s'
-logging.basicConfig(filename=log_dir + "/"+ timestamp + '_open-nti.log',level=logging_level,format=formatter, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename=log_dir + "/"+ timestamp + '_open-nti.log',
+                    level=logging_level,
+                    format=formatter,
+                    datefmt='%Y-%m-%d %H:%M:%S')
 
 if dynamic_args['console']:
     logger.info("Console logs enabled")
@@ -787,8 +783,9 @@ if dynamic_args['console']:
 
 ###############
 
+###########################################################
 #  LOAD all credentials in a dict
-
+###########################################################
 credentials_yaml_file = BASE_DIR_INPUT + default_variables['credentials_file']
 credentials = {}
 logger.info('Importing credentials file: %s ',credentials_yaml_file)
@@ -797,10 +794,11 @@ try:
         credentials = yaml.load(f)
 except Exception, e:
     logger.error('Error importing credentials file: %s', credentials_yaml_file)
- #   logging.exception(e)
     sys.exit(0)
-#  LOAD all hosts with their tags in a dic
 
+###########################################################
+#  LOAD all hosts with their tags in a dic               ##
+###########################################################
 hosts_yaml_file = BASE_DIR_INPUT + default_variables['hosts_file']
 hosts = {}
 logger.debug('Importing host file: %s ',hosts_yaml_file)
@@ -809,12 +807,11 @@ try:
         hosts = yaml.load(f)
 except Exception, e:
     logger.error('Error importing host file: %s', hosts_yaml_file)
-    #logging.exception(e)
     sys.exit(0)
 
-
-#  LOAD all commands with their tags in a dict
-
+###########################################################
+#  LOAD all commands with their tags in a dict           ##
+###########################################################
 commands_yaml_file = BASE_DIR_INPUT + default_variables['commands_file']
 commands = []
 logger.debug('Importing commands file: %s ',commands_yaml_file)
@@ -824,13 +821,13 @@ with open(commands_yaml_file) as f:
             commands.append(document)
     except Exception, e:
         logger.error('Error importing commands file: %s', commands_yaml_file)
-#        logging.exception(e)
         sys.exit(0)
 
 general_commands = commands[0]
 
-#  LOAD all parsers
-
+###########################################################
+#  LOAD all parsers                                      ##
+###########################################################
 junos_parsers = []
 junos_parsers_yaml_files = os.listdir(BASE_DIR + "/" + default_variables['junos_parsers_dir'])
 logger.debug('Importing junos parsers file: %s ',junos_parsers_yaml_files)
@@ -840,7 +837,6 @@ for junos_parsers_yaml_file in junos_parsers_yaml_files:
             junos_parsers.append(yaml.load(f))
     except Exception, e:
         logger.error('Error importing junos parser: %s', junos_parsers_yaml_file)
- #       logging.exception(e)
         pass
 
 pfe_parsers = []
@@ -852,16 +848,14 @@ for pfe_parsers_yaml_file in pfe_parsers_yaml_files:
             pfe_parsers.append(yaml.load(f))
     except Exception, e:
         logger.error('Error importing pfe parser: %s', pfe_parsers_yaml_file)
- #       logging.exception(e)
         pass
 
 if __name__ == "__main__":
 
-
     logger.debug('Getting hosts that matches the specified tags')
     #  Get all hosts that matches with the tags
     target_hosts = get_target_hosts()
-    logger.debug('The following hosts are being selected:  %s', target_hosts)
+    logger.debug('The following hosts are being selected: %s', target_hosts)
 
     target_hosts_lists = [target_hosts[x:x+len(target_hosts)/max_collector_threads+1] for x in range(0, len(target_hosts), len(target_hosts)/max_collector_threads+1)]
 
