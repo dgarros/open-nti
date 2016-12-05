@@ -58,23 +58,6 @@ def convert_variable_type(var):
         pass
     return var   # I guess that is a string
 
-def check_db_status():
-    # if the db is not found, then try to create it
-    try:
-        dbclient = InfluxDBClient(db_server, db_port, db_admin, db_admin_password)
-        dblist = dbclient.get_list_database()
-        db_found = False
-        for db in dblist:
-            if db['name'] == db_name:
-                db_found = True
-        if not(db_found):
-            logger.info('Database <%s> not found, trying to create it', db_name)
-            dbclient.create_database(db_name)
-        return True
-    except Exception as e:
-        logger.error('Error querying open-nti database: %s', e)
-        return False
-
 def get_target_hosts():
     my_target_hosts = {}
     for host in sorted(hosts.keys()):
@@ -161,9 +144,6 @@ def get_credentials(my_host):
                         my_target_credentials['password'] = credentials[credential]["password"]
 
                         return my_target_credentials
-
-
-
 
 def execute_command(jdevice,command):
     format = "text"
@@ -267,7 +247,7 @@ def eval_variable_value(value,**kwargs):
 
 def print_datapoints(datapoints):
     """
-    Convert Juniper PyEZ Table/View items to list of dictionaries
+    Print all datapoints to STDOUT in influxdb format for Telegraf to pick them up
     """
 
     ## Format Tags
