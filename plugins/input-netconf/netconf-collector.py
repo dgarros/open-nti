@@ -744,6 +744,7 @@ except Exception, e:
 db_schema = default_variables['db_schema']
 max_connection_retries = default_variables['max_connection_retries']
 max_collector_threads = default_variables['max_collector_threads']
+use_threads = default_variables['use_threads']
 delay_between_commands = default_variables['delay_between_commands']
 logging_level = default_variables['logging_level']
 default_junos_rpc_timeout = default_variables['default_junos_rpc_timeout']
@@ -863,13 +864,9 @@ if __name__ == "__main__":
     target_hosts = get_target_hosts()
     logger.debug('The following hosts are being selected: %s', target_hosts)
 
-    target_hosts_lists = [target_hosts[x:x+len(target_hosts)/max_collector_threads+1] for x in range(0, len(target_hosts), len(target_hosts)/max_collector_threads+1)]
+    if use_threads:
+        target_hosts_lists = [target_hosts[x:x+len(target_hosts)/max_collector_threads+1] for x in range(0, len(target_hosts), len(target_hosts)/max_collector_threads+1)]
 
-    no_thread = True
-
-    if no_thread:
-        collector( host_list=target_hosts )
-    else:
         jobs = []
         i=1
         for target_hosts_list in target_hosts_lists:
@@ -885,3 +882,6 @@ if __name__ == "__main__":
         # Ensure all of the threads have finished
         for j in jobs:
             j.join()
+    else:
+        # Execute everythings in the main thread
+        collector(host_list=target_hosts)
