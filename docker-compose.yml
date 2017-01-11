@@ -1,3 +1,4 @@
+
 version: '2'
 services:
   consul:
@@ -19,26 +20,34 @@ services:
     ports:
       - "8500:8500"
 
-# Exactly one per physical node
-  # registrator:
-  #   command: "-internal consul://consul:8500"
-  #   image: gliderlabs/registrator:latest
-  #   container_name: registrator
-  #   links:
-  #     - "consul"
-  #   volumes:
-  #     - "/var/run/docker.sock:/tmp/docker.sock"
+  lb:
+    image: $LB_UDP_IMAGE_NAME:$IMAGE_TAG
+    container_name: $LB_UDP_CONTAINER_NAME
+    volumes:
+     - /etc/localtime:/etc/localtime:ro
+    ports:
+     - "$LOCAL_PORT_EVENT:6000/udp"
+     - "$LOCAL_PORT_JTI:50000/udp"
+     - "$LOCAL_PORT_ANALYTICSD:50020/udp"
+    links:
+      - opennti
+      - consul
+    depends_on:
+      - input-jti
+      - input-syslog
 
   input-jti:
     image: $INPUT_JTI_IMAGE_NAME:$IMAGE_TAG
-    container_name: $INPUT_JTI_CONTAINER_NAME
     environment:
       - "INFLUXDB_ADDR=opennti"
       - "OUTPUT_INFLUXDB=true"
       - "OUTPUT_STDOUT=false"
-    ports:
-      - "$LOCAL_PORT_JTI:50000/udp"
-      - "$LOCAL_PORT_ANALYTICSD:50020/udp"
+    expose:
+     - "50000/udp"
+     - "50020/udp"
+    # ports:
+    #   - "$LOCAL_PORT_JTI:50000/udp"
+    #   - "$LOCAL_PORT_ANALYTICSD:50020/udp"
     volumes:
       - /etc/localtime:/etc/localtime:ro
     links:
@@ -47,13 +56,12 @@ services:
 
   input-syslog:
     image: $INPUT_SYSLOG_IMAGE_NAME:$IMAGE_TAG
-    container_name: $INPUT_SYSLOG_CONTAINER_NAME
     environment:
       - "INFLUXDB_ADDR=opennti"
       - "OUTPUT_INFLUXDB=true"
       - "OUTPUT_STDOUT=false"
-    ports:
-      - "$LOCAL_PORT_EVENT:6000/udp"
+    expose:
+     - "6000/udp"
     volumes:
       - /etc/localtime:/etc/localtime:ro
     links:
@@ -77,8 +85,6 @@ services:
   input-netconf:
     image: $INPUT_NETCONF_IMAGE_NAME:$IMAGE_TAG
     container_name: $INPUT_NETCONF_CONTAINER_NAME
-    # environment:
-    #   - SERVICE_NAME=input-netconf
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./plugins/input-netconf/:/data
