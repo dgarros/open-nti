@@ -1,16 +1,12 @@
 FROM fluent/fluentd:v0.12.29
 MAINTAINER Damien Garros <dgarros@gmail.com>
 
-<<<<<<< HEAD
-=======
 ENV FLUENTD_JUNIPER_VERSION 0.2.11
 ARG TELEGRAF_VERSION=1.1.2
+ARG CONSUL_VERSION=0.7.2
 
->>>>>>> 1dd281e640075742a65fc1898a313c5df58e8fab
 USER root
 WORKDIR /home/fluent
-
-ARG CONSUL_VERSION=0.7.2
 
 ## Install python
 RUN apk update &&\
