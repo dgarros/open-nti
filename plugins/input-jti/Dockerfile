@@ -59,26 +59,21 @@ ADD     consul /etc/consul/conf.d
 RUN   echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories &&\
       apk update &&\
       apk add runit
+
  # Moving runit and consul configuration to /etc
 COPY    service /etc/service
 RUN     chmod -R 755 /etc/service
 
-# # Copy Start script to generate configuration dynamically
-# ADD     fluentd-alpine.start.sh   fluentd-alpine.start.sh
-# RUN     chown -R fluent:fluent fluentd-alpine.start.sh &&\
-#         chmod 777 fluentd-alpine.start.sh
+# Copy Start script to generate configuration dynamically
+ADD     fluentd-alpine.start.sh   fluentd-alpine.start.sh
+RUN     chown -R fluent:fluent fluentd-alpine.start.sh &&\
+        chmod 777 fluentd-alpine.start.sh
 
 COPY    fluent.conf /fluentd/etc/fluent.conf
 COPY    plugins /fluentd/plugins
 
 RUN echo "fluent ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-<<<<<<< HEAD
-ADD     runit/my_init.sh   /sbin/my_init
-RUN     chmod +x /sbin/my_init
-
-# USER fluent
-=======
 #############################
 ## Install Telegraf
 #############################
@@ -97,11 +92,12 @@ COPY telegraf.toml /home/fluent/telegraf.toml
 RUN touch /var/log/telegraf-monitoring.log &&\
     chmod 777 /var/log/telegraf-monitoring.log
 
+ADD     runit/my_init.sh   /sbin/my_init
+RUN     chmod +x /sbin/my_init
 
-
+# USER fluent
 USER fluent
 EXPOSE 24284
->>>>>>> 1dd281e640075742a65fc1898a313c5df58e8fab
 
 ENV OUTPUT_KAFKA=false \
     OUTPUT_INFLUXDB=true \
@@ -119,4 +115,4 @@ ENV OUTPUT_KAFKA=false \
     KAFKA_DATA_TYPE=json \
     KAFKA_TOPIC=jnpr.jvision
 
-CMD ["/sbin/my_init"]
+CMD ["/home/fluent/fluentd-alpine.start.sh"]
