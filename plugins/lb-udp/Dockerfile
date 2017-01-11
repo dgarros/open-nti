@@ -3,6 +3,7 @@ MAINTAINER Damien Garros <dgarros@gmail.com>
 
 ARG CONSUL_VERSION=0.7.2
 ARG CONSUL_TEMPLATE_VERSION=0.16.0
+ARG TELEGRAF_VERSION=1.1.2
 
 RUN apk update &&\
     apk add wget
@@ -28,6 +29,21 @@ RUN wget -q https://releases.hashicorp.com/consul-template/${CONSUL_TEMPLATE_VER
     mkdir -p /consul-template /consul-template/config.d /consul-template/templates
 
 ADD     consul /etc/consul/conf.d
+
+#############################
+## Install Telegraf
+#############################
+RUN wget -q https://dl.influxdata.com/telegraf/releases/telegraf-${TELEGRAF_VERSION}-static_linux_amd64.tar.gz && \
+    mkdir -p /usr/src /etc/telegraf && \
+    tar -C /usr/src -xzf telegraf-${TELEGRAF_VERSION}-static_linux_amd64.tar.gz && \
+    mv /usr/src/telegraf*/telegraf.conf /etc/telegraf/ && \
+    chmod +x /usr/src/telegraf*/* && \
+    cp -a /usr/src/telegraf*/* /usr/bin/ && \
+    rm -rf *.tar.gz* /usr/src /root/.gnupg
+
+COPY telegraf.toml /home/fluent/telegraf.toml
+RUN touch /var/log/telegraf-monitoring.log &&\
+    chmod 777 /var/log/telegraf-monitoring.log
 
 COPY  nginx.conf.tpl /source/nginx.conf.tpl
 COPY  start-lb-udp.sh /source/start-lb-udp.sh

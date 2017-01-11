@@ -1,5 +1,7 @@
 #!/bin/sh
 
+telegraf --config /home/fluent/telegraf.toml >>/var/log/telegraf-monitoring.log 2>&1 &
+
 /usr/local/bin/consul agent -config-dir /etc/consul/conf.d >>/var/log/consul.log 2>&1 &
 
 /usr/local/bin/consul-template  -consul consul:8500 \
