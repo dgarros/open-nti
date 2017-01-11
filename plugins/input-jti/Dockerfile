@@ -2,6 +2,7 @@ FROM fluent/fluentd:v0.12.29
 MAINTAINER Damien Garros <dgarros@gmail.com>
 
 ENV FLUENTD_JUNIPER_VERSION 0.3.0
+ARG TELEGRAF_VERSION=1.1.2
 
 USER root
 WORKDIR /home/fluent
@@ -72,10 +73,35 @@ COPY    plugins /fluentd/plugins
 
 RUN echo "fluent ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+<<<<<<< HEAD
 ADD     runit/my_init.sh   /sbin/my_init
 RUN     chmod +x /sbin/my_init
 
 # USER fluent
+=======
+#############################
+## Install Telegraf
+#############################
+RUN apk add --no-cache ca-certificates openssl wget && \
+    update-ca-certificates
+
+RUN wget -q https://dl.influxdata.com/telegraf/releases/telegraf-${TELEGRAF_VERSION}-static_linux_amd64.tar.gz && \
+    mkdir -p /usr/src /etc/telegraf && \
+    tar -C /usr/src -xzf telegraf-${TELEGRAF_VERSION}-static_linux_amd64.tar.gz && \
+    mv /usr/src/telegraf*/telegraf.conf /etc/telegraf/ && \
+    chmod +x /usr/src/telegraf*/* && \
+    cp -a /usr/src/telegraf*/* /usr/bin/ && \
+    rm -rf *.tar.gz* /usr/src /root/.gnupg
+
+COPY telegraf.toml /home/fluent/telegraf.toml
+RUN touch /var/log/telegraf-monitoring.log &&\
+    chmod 777 /var/log/telegraf-monitoring.log
+
+
+
+USER fluent
+EXPOSE 24284
+>>>>>>> 1dd281e640075742a65fc1898a313c5df58e8fab
 
 ENV OUTPUT_KAFKA=false \
     OUTPUT_INFLUXDB=true \
